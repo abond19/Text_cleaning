@@ -16,11 +16,15 @@ from datasets.load import load_from_disk
 from fsspec.spec import AbstractFileSystem
 from tqdm import tqdm
 
-dataset = load_dataset('mc4', "tr", split="train", cache_dir="./mc4")
+#dataset = load_dataset('mc4', "tr", split="train", cache_dir="./mc4_2")
 
-dataset.save_to_disk(dataset_path='./mc4_downloaded')
+#dataset.save_to_disk(dataset_path='./mc4_downloaded')
 
-print(dataset.shape)
+#print(dataset.shape)
+
+def clean_sentence(sentence):
+    sentence['text'] =  sentence['text'].replace("\n", " ").replace("\r", "").replace(",", "")
+    return sentence
 
 conf = "./deduplicate/conf/self_deduplicate_tr.yaml"
 
@@ -35,7 +39,17 @@ if conf["load_from_disk"]["path"]:
 else:
     ds = load_dataset(**conf["load_dataset"])
               
-ds.set_format("pandas")
 #df = ds['train'][:]
 print(ds.shape)
-ds.to_csv('./mc4_downloaded/train_mc4.csv')
+
+#for index, line in tqdm(ds.iterrows()):
+#    new_line = clean_sentence(line.iloc[0])
+#    #print(new_line)
+#    ds.iloc[index]['text'] = new_line
+    
+ds.map(clean_sentence)
+ds.set_format("pandas")
+
+#ds = ds['text']
+
+ds.to_csv('./mc4_downloaded/train_mc4_2.csv')

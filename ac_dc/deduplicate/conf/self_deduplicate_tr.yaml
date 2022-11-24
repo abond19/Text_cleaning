@@ -13,7 +13,7 @@ load_dataset:
   split: null
   use_auth_token: false
 load_from_disk:
-  path: "./mc4_downloaded/"
+  path: "../dataset_filtered/tr"
   gcs: null
 cache: "outputs/tr_cache"
 output: "outputs/tr"

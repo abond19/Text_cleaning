@@ -8,6 +8,16 @@ from datasets import load_dataset
 
 from filtering import DatasetFiltering
 
+import gcsfs
+import simhash
+import typer
+import yaml
+import datasets
+from datasets import load_dataset, DatasetDict
+from datasets.load import load_from_disk
+from fsspec.spec import AbstractFileSystem
+from tqdm import tqdm
+
 
 def check_num_proc(num_proc: int = -1) -> int:
     """
@@ -119,12 +129,22 @@ def main():
     #    use_auth_token=True, 
     #    cache_dir="./mc4"
     #)
+    """
+    conf = "./deduplicate/conf/self_deduplicate_tr.yaml"
+
+    with open(conf, "r") as f:
+        conf = yaml.safe_load(f.read())
+
+    if conf["load_from_disk"]["path"]:
+        fs: AbstractFileSystem = None
+        if conf["load_from_disk"]["gcs"]:
+            fs = gcsfs.GCSFileSystem(project=conf["load_from_disk"]["gcs"])
+        dataset = load_from_disk(conf["load_from_disk"]["path"], fs=fs)
+    else:
+        dataset = load_dataset(**conf["load_dataset"])
+    """
+    dataset = load_dataset("text", data_files="./ProperMC4/mc4.txt", cache_dir="./MC4")
     
-    dataset = load_dataset(
-        "text",
-        data_files="outputs/finished.txt",
-        cache_dir="./mc4"
-    )
     print("Finished loading dataset")
     dataset_filtering = DatasetFiltering(
        dataset=dataset,
@@ -136,9 +156,11 @@ def main():
         path_dir_save_dataset=args.path_dir_save_dataset,
     )
     print("Created DatasetFiltering")
-    #dataset_filtering.modifying_documents()
-    #print("Finished modifying documents")
+    dataset_filtering.modifying_documents()
+    dataset_filtering.save_dataset()
+    print("Finished modifying documents")
     dataset_filtering.filtering()
+    print("Finished filtering")
     dataset_filtering.save_dataset()
 
 

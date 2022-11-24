@@ -1,8 +1,28 @@
 import os
 import re
 from tqdm import tqdm
+import warnings
 
+from datasets import load_dataset, load_from_disk
+from datasets import Dataset
+from itertools import product
+import logging
+from collections import Counter, defaultdict, deque
+from typing import Dict, Set
 from multiprocessing import Pool, cpu_count
+
+import gcsfs
+import simhash
+import typer
+import yaml
+import datasets
+from datasets import load_dataset, DatasetDict
+from datasets.load import load_from_disk
+from fsspec.spec import AbstractFileSystem
+
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
+import pandas as pd
 
 def check_num_proc(num_proc: int = -1) -> int:
     """
@@ -100,19 +120,77 @@ def clean_sentence(sentence):
     
     # Put spaces for camel case
     result = " ".join(camel_case_split(result)).strip()
+    result = result.replace('\n', ' ').replace('\r', '')
+    #sentence['text'] = result
     return result
 
 if __name__ == "__main__":
-    output_file = open("outputs/test_finished.txt", "w")
+    output_file = open("ProperMC4/finished.txt", "w")
+    
+    
+   # df = pd.read_csv("deduplicate/outputs/tr/text.csv")
+    
+    """
+    conf = "./deduplicate/conf/self_deduplicate_tr.yaml"
+
+    with open(conf, "r") as f:
+        conf = yaml.safe_load(f.read())
+        print("Loaded configuration")
+
+    if conf["load_from_disk"]["path"]:
+        fs: AbstractFileSystem = None
+        if conf["load_from_disk"]["gcs"]:
+            fs = gcsfs.GCSFileSystem(project=conf["load_from_disk"]["gcs"])
+        ds = load_from_disk(conf["load_from_disk"]["path"], fs=fs)
+        print("Finished loading dataset")
+    else:
+        ds = load_dataset(**conf["load_dataset"])
+    """
+    #ds = ds['text']
+    #print(ds)
     
     pool = Pool(check_num_proc())
     
-    with open("mc4_downloaded/train_mc4.csv") as f:
-        for line in tqdm(pool.imap_unordered(clean_sentence, f, chunksize=100), total=1344075912):
+    print("Started cleaning")
+    with open("ProperMC4/mc4.txt") as f:
+        for line in tqdm(pool.imap_unordered(clean_sentence, f, chunksize=100), total=62775992):
         #for line in tqdm(f, total=1344075912):
             #cleaned = clean_sentence(line)
             if line != "":
                 output_file.write(line + "\n")
+    
+    #for line in tqdm(ds['text'], total=11861338):
+    #    cleaned = clean_sentence(line)
+    #    if line != "":
+    #        output_file.write(line + "\n")
 
+    #with open("samples/sketchengine_sample.txt", "r") as f:
+    #    for line in f:
+    #        cleaned = clean_sentence(line)
+    #        if cleaned != "":
+    #            output_file.write(cleaned + "\n")
+    
+    #for line in tqdm(pool.imap_unordered(clean_sentence, ds['text'], chunksize=100), total=11861338):
+    #    if line != "":
+    #        output_file.write(line + "\n")
+    
+    #ds.map(clean_sentence, batched=True, num_proc=check_num_proc())
+    
+    #ds.set_format('pandas')
+    
+    #ds.to_csv("outputs/processed.csv")
+    
+    #new_df = pd.DataFrame(columns=["text"])
+    
+    #for index, line in tqdm(df.iterrows()):
+    #    new_line = clean_sentence(line.iloc[0])
+    #    to_append = {"text" : new_line}
+    #    new_df = new_df.append(to_append, ignore_index=True)
+    
+    
+    #for element in new_df['text']:
+    #    if len(element) > 50:
+    #        output_file.write(element + "\n")
+    
     output_file.close()
     

@@ -68,23 +68,27 @@ def main(conf: str) -> None:
     #   f"Extracted URLs: {len(urls['url'])}, Unique URLs: {len(set(urls['url']))}"
     #)
     
-    urls = DatasetDict({"train": urls})
+    #urls = DatasetDict({"train": urls})
+    
+    urls.rename_column(original_column_name="Unnamed: 0", new_column_name="id")
+    
+    print(urls)
 
     # Save text data for substring deduplication
     
-    list(urls.items())[0][1].to_csv(
+    urls['train'].to_csv(
         os.path.join(conf["output"], "text.csv"),
         num_proc=conf["num_proc"],
         index=False,
         header=False,
         columns=["text"],
     )
-    list(urls.items())[0][1].to_csv(
+    urls['train'].to_csv(
         os.path.join(conf["output"], "ids.csv"),
         num_proc=conf["num_proc"],
         index=False,
         header=False,
-        columns=["id"],
+        columns=["Unnamed: 0"],
     )
     
     del urls
@@ -112,6 +116,7 @@ def main(conf: str) -> None:
     logger.info(f"Done hashing {len(ds)} records")
     HASH = '__dedup_hash__'
     logger.info(f"Start querying {len(ds)} records")
+    ds = ds['train']
     matches = simhash.find_all(
         tqdm(ds['__dedup_hash__'], total=len(ds)),
         conf["num_blocks"],
@@ -138,7 +143,7 @@ def main(conf: str) -> None:
     
     for element in ds:
         hash = element['__dedup_hash__']
-        hash2ids[hash].add(element['id'])
+        hash2ids[hash].add(element['Unnamed: 0'])
         
 
     seen = set()
@@ -163,7 +168,7 @@ def main(conf: str) -> None:
             ids = hash2ids[x]
             ids.update(hash2ids[y])
             for text in ds.filter(
-                lambda x: x["id"] in ids,
+                lambda x: x["Unnamed: 0"] in ids,
                 num_proc=conf["num_proc"],
             )["text"]:
                 records.append(text)
@@ -207,7 +212,7 @@ def main(conf: str) -> None:
         o.write(f"id\thash\tcluster\n")
         for element in ds:
             hash = element['__dedup_hash__']
-            o.write(f"{element['id']}\t{hash}\t{hash2cluster.get(hash, -1)}\n")
+            o.write(f"{element['Unnamed: 0']}\t{hash}\t{hash2cluster.get(hash, -1)}\n")
 
     logger.info("Done!")
 
