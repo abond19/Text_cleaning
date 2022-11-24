@@ -73,7 +73,7 @@ def is_allowed(c):
         return True
     if c == " " or c == "\t" or c == "\n":
         return True
-    if c == "." or c == "," or "'" or "\"":
+    if c == "." or c == "," or "'" or "\"" or "!" or "?":
         return True
     if c in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]:
         return True
